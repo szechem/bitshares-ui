@@ -2,6 +2,9 @@ import ls from "./localStorage";
 import {blockTradesAPIs, openledgerAPIs} from "api/apiConfig";
 import {availableGateways} from "common/gateways";
 const blockTradesStorage = new ls("");
+let oidcStorage = new ls(
+    "oidc.user:https://blocktrades.us/:10ecf048-b982-467b-9965-0b0926330869"
+);
 
 let fetchInProgess = {};
 let fetchCache = {};
@@ -444,7 +447,7 @@ export function validateAddress({
 }
 
 let _conversionCache = {};
-export function getConversionJson(inputs) {
+export function getConversionJson(inputs, isUserAuthorized = false) {
     const {input_coin_type, output_coin_type, url, account_name} = inputs;
     if (!input_coin_type || !output_coin_type) return Promise.reject();
     const body = JSON.stringify({
@@ -460,15 +463,24 @@ export function getConversionJson(inputs) {
 
     const _cacheString =
         url + input_coin_type + output_coin_type + account_name;
+    +input_coin_type + output_coin_type + account_name;
     return new Promise((resolve, reject) => {
         if (_conversionCache[_cacheString])
             return resolve(_conversionCache[_cacheString]);
+        let headers = {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+        };
+        if (isUserAuthorized) {
+            headers = {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${oidcStorage.get("")["access_token"]}`
+            };
+        }
         fetch(url + "/simple-api/initiate-trade", {
             method: "post",
-            headers: new Headers({
-                Accept: "application/json",
-                "Content-Type": "application/json"
-            }),
+            headers,
             body: body
         })
             .then(reply => {
