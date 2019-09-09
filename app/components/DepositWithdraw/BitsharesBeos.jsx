@@ -244,6 +244,7 @@ class BitsharesBeos extends React.Component {
         let assetMemoCoinTypes = {};
         let beosAssets = [];
         let beosCoins = [];
+        let tradingPairsCoinTypes = [];
 
         let coinTypesPromisecheck = fetch(beosAPIs.BASE + beosAPIs.COINS_LIST, {
             method: "get",
@@ -260,47 +261,56 @@ class BitsharesBeos extends React.Component {
             json_responses => {
                 let [coinTypes, tradingPairs] = json_responses;
 
+                tradingPairs.forEach(tradingPair => {
+                    tradingPairsCoinTypes.push(tradingPair.inputCoinType);
+                    tradingPairsCoinTypes.push(tradingPair.outputCoinType);
+                });
+
                 coinTypes.forEach(element => {
-                    if (element.walletType === "beos") {
-                        let memoCoinType = null;
-                        memoCoinType = element.coinType;
-                        assetMemoCoinTypes[element.walletSymbol] = memoCoinType;
-                    } else if (element.walletType === "bitshares2") {
-                        let coinType = null;
-                        let memoCoinType = null;
-
-                        coinType = element.coinType;
-
-                        tradingPairs.find(element => {
-                            if (element.inputCoinType === coinType) {
-                                memoCoinType = element.outputCoinType;
-                            }
-                        });
-
-                        if (element.walletSymbol !== "BEOS") {
+                    if (tradingPairsCoinTypes.indexOf(element.coinType) > -1) {
+                        if (element.walletType === "beos") {
+                            let memoCoinType = null;
+                            memoCoinType = element.coinType;
                             assetMemoCoinTypes[
                                 element.walletSymbol
                             ] = memoCoinType;
-                        }
+                        } else if (element.walletType === "bitshares2") {
+                            let coinType = null;
+                            let memoCoinType = null;
 
-                        beosAssets.push(element.walletSymbol);
+                            coinType = element.coinType;
 
-                        if (element.walletSymbol === "BEOS") {
-                            tradingPairs.forEach(tradingPair => {
-                                if (
-                                    tradingPair.inputCoinType ===
-                                    element.coinType
-                                ) {
-                                    coinTypes.find(coinTypeObject => {
-                                        if (
-                                            coinTypeObject.coinType ===
-                                            tradingPair.outputCoinType
-                                        ) {
-                                            beosCoins.push(coinTypeObject);
-                                        }
-                                    });
+                            tradingPairs.find(element => {
+                                if (element.inputCoinType === coinType) {
+                                    memoCoinType = element.outputCoinType;
                                 }
                             });
+
+                            if (element.walletSymbol !== "BEOS") {
+                                assetMemoCoinTypes[
+                                    element.walletSymbol
+                                ] = memoCoinType;
+                            }
+
+                            beosAssets.push(element.walletSymbol);
+
+                            if (element.walletSymbol === "BEOS") {
+                                tradingPairs.forEach(tradingPair => {
+                                    if (
+                                        tradingPair.inputCoinType ===
+                                        element.coinType
+                                    ) {
+                                        coinTypes.find(coinTypeObject => {
+                                            if (
+                                                coinTypeObject.coinType ===
+                                                tradingPair.outputCoinType
+                                            ) {
+                                                beosCoins.push(coinTypeObject);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                         }
                     }
                 });
